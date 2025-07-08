@@ -90,6 +90,11 @@ jobs:
           name: build-output
           path: build/dist/**/*
           
+      - name: Start Fortify SAST and DAST scans
+        run: |
+          fcli fod sast start
+          fcli fod dast start
+          
     outputs:
       do_release: ${{ env.DO_RELEASE }}
       do_prod_release: ${{ env.DO_PROD_RELEASE }}
@@ -461,4 +466,3 @@ jobs:
           git add .
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
-          
