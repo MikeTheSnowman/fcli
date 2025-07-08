@@ -462,3 +462,17 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  fortify_scans:
+    name: Fortify SAST and DAST Scans
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: artifacts
+      - name: Start Fortify SAST and DAST scans
+        run: |
+          java -jar artifacts/release-assets/fcli.jar fod sast start
+          java -jar artifacts/release-assets/fcli.jar fod dast start
