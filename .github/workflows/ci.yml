@@ -25,8 +25,8 @@ jobs:
 
       - name: PROD - Prepare GitHub release
         id: create_prod_release
-        uses: googleapis/release-please-action@v4
         if: contains(github.ref, 'refs/heads/rel/')
+        uses: googleapis/release-please-action@v4
         with:
           skip-github-pull-request: true
           target-branch: ${{ github.ref_name }}
@@ -89,6 +89,36 @@ jobs:
         with:
           name: build-output
           path: build/dist/**/*
+          
+      # --- Fortify SAST and DAST Scan Steps ---
+      - name: Install ScanCentral SAST Client
+        if: env.DO_BUILD
+        run: java -jar build/libs/fcli.jar tool sc-client install --version latest
+
+      - name: Package source code for SAST
+        if: env.DO_BUILD
+        run: ~/.fcli/sc-client/bin/sc-client package -format zip -o my_app_source.zip .
+
+      - name: Login to Fortify on Demand
+        if: env.DO_BUILD
+        run: java -jar build/libs/fcli.jar fod session login --url ${{ secrets.FOD_URL }} --tenant ${{ secrets.FOD_TENANT }} --user ${{ secrets.FOD_USER }} --password ${{ secrets.FOD_PASSWORD }}
+
+      - name: Create/Ensure FOD Application
+        if: env.DO_BUILD
+        run: java -jar build/libs/fcli.jar fod app create ${{ github.repository }} --auto-required-attrs --criticality High --owner ${{ secrets.FOD_USER }} --skip-if-exists --app-type Web
+
+      - name: Create/Ensure FOD Release
+        if: env.DO_BUILD
+        run: java -jar build/libs/fcli.jar fod release create ${{ github.repository }} ${{ github.ref_name }} --copy-current-state --skip-if-exists
+
+      - name: Start Fortify SAST Scan
+        if: env.DO_BUILD
+        run: java -jar build/libs/fcli.jar fod sast-scan my_app_source.zip --application-name ${{ github.repository }} --release-name ${{ github.ref_name }} --scan-type Express --upload-results --wait
+
+      - name: Start Fortify DAST Scan
+        if: env.DO_BUILD
+        run: java -jar build/libs/fcli.jar fod dast-scan --application-name ${{ github.repository }} --release-name ${{ github.ref_name }} --url ${{ secrets.DAST_SCAN_URL }} --scan-type Standard --wait
+      # --- End Fortify SAST and DAST Scan Steps ---
           
     outputs:
       do_release: ${{ env.DO_RELEASE }}
@@ -301,7 +331,7 @@ jobs:
         if: contains(github.ref, 'refs/heads/rel/')
         uses: googleapis/release-please-action@v4
         with:
-          skip-github-release: true
+          skip-github-pull-request: true
           target-branch: ${{ github.ref_name }}
           release-type: simple
           
@@ -461,4 +491,3 @@ jobs:
           git add .
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
-          
