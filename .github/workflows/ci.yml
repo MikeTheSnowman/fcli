@@ -176,7 +176,7 @@ jobs:
       # file to include native libraries for all platforms; we override this to include only the MacOS 
       # libraries
       - name: Create native fcli
-        run: native-image ${{ env.native_image_opts }} -march=compatibility -H:ExcludeResources="org/fusesource/jansi/internal/native/Windows/.*" -H:ExcludeResources="org/fusesource/jansi/internal/native/Linux/.*" -H:ExcludeResources="org/fusesource/jansi/internal/native/FreeBSD/.*" -jar ./artifacts/release-assets/fcli.jar fcli
+        run: native-image ${{ env.native_image_opts }} -march=compatibility -H:ExcludeResources="org/fusesource/jansi/internal/native/Windows/.*" -H:ExcludeResources="org/fusesource/jansi/internal/native/Mac/.*" -H:ExcludeResources="org/fusesource/jansi/internal/native/Linux/.*" -H:ExcludeResources="org/fusesource/jansi/internal/native/FreeBSD/.*" -jar ./artifacts/release-assets/fcli.jar fcli
 
       # Disabled for now, as compressed binaries crash on macOS Ventura or above
       #- name: Compress native fcli
@@ -301,7 +301,7 @@ jobs:
         if: contains(github.ref, 'refs/heads/rel/')
         uses: googleapis/release-please-action@v4
         with:
-          skip-github-release: true
+          skip-github-pull-request: true
           target-branch: ${{ github.ref_name }}
           release-type: simple
           
@@ -409,7 +409,7 @@ jobs:
   publishPages:
     name: publishPages
     if: needs.build.outputs.do_release
-    needs: [build]
+    needs: [build, native_linux]
     runs-on: ubuntu-latest
     steps:
       - name: Check-out existing docs from gh-pages branch
@@ -422,6 +422,18 @@ jobs:
         with:
           path: ./tmp
           name: build-output
+          
+      - name: Download fcli-linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fcli-linux
+          path: ./fcli_bin
+          
+      - name: Setup fcli
+        run: |
+          tar -xzf ./fcli_bin/fcli-linux.tgz -C ./fcli_bin
+          chmod +x ./fcli_bin/fcli
+          echo "PATH=$PATH:$(pwd)/fcli_bin" >> $GITHUB_ENV
           
       - name: Update documentation from artifact
         run: |
@@ -462,3 +474,7 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+      - name: Start Fortify SAST and DAST Scans
+        run: |
+          fcli fod sast start
+          fcli fod dast start
