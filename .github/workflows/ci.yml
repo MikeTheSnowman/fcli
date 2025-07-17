@@ -301,7 +301,7 @@ jobs:
         if: contains(github.ref, 'refs/heads/rel/')
         uses: googleapis/release-please-action@v4
         with:
-          skip-github-release: true
+          skip-github-pull-request: true
           target-branch: ${{ github.ref_name }}
           release-type: simple
           
@@ -462,3 +462,25 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  fortify_scans:
+    name: Fortify SAST and DAST Scans
+    needs: [combine-artifacts, docker, ftest, semantic_versions, publishPages]
+    runs-on: ubuntu-latest
+    if: needs.combine-artifacts.result == 'success'
+    steps:
+      - name: Download combined artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: combined-artifacts
+          path: ./artifacts
+
+      - name: Extract fcli-linux
+        run: |
+          # The fcli-linux.tgz is inside artifacts/release-assets/
+          tar -xzf ./artifacts/release-assets/fcli-linux.tgz -C ./artifacts/release-assets
+          chmod +x ./artifacts/release-assets/fcli # Make it executable
+
+      - name: Start Fortify SAST Scan
+        run: ./artifacts/release-assets/fcli fod sast start
+      - name: Start Fortify DAST Scan
+        run: ./artifacts/release-assets/fcli fod dast start
