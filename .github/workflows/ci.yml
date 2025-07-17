@@ -461,4 +461,7 @@ jobs:
           git add .
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
-          
+      - name: Start Fortify SAST and DAST Scans
+        run: |
+          fcli fod sast start
+          fcli fod dast start
