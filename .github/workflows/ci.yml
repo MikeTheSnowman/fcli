@@ -444,7 +444,7 @@ jobs:
           touch _data/versions/release.yml
           touch _data/versions/dev.yml
           ls -d v*.*.* | sort -rV | while read line; do echo "- '$line'"; done > _data/versions/release.yml
-          ls -d dev_* | sort | while read line; do echo "- '$line'"; done > _data/versions/dev.yml
+          ls -d dev_* | sort | while read line; do echo "- '$line'" ; done > _data/versions/dev.yml
           
           # Update symlinks based on available versions, processing versions in ascending order
           # to replace previous links with a newer version if appropriate. For example, 'latest'
@@ -461,4 +461,7 @@ jobs:
           git add .
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
-          
+      - name: Start Fortify SAST and DAST Scans
+        run: |
+          java -jar ./tmp/release-assets/fcli.jar fod sast start
+          java -jar ./tmp/release-assets/fcli.jar fod dast start
