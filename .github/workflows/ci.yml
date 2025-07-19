@@ -462,3 +462,34 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  fortify_scans:
+    name: Fortify SAST and DAST Scans
+    # This job depends on all other "final" jobs to ensure it runs last.
+    # If any of these jobs are skipped due to their own 'if' conditions,
+    # this job will also be skipped.
+    needs: [docker, semantic_versions, ftest, publishPages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out source code
+        uses: actions/checkout@v4
+        # This checkout might be useful if fcli needs access to the source code
+        # for analysis context (e.g., project root, config files).
+
+      - name: Download combined artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          name: combined-artifacts
+
+      - name: Extract fcli-linux executable
+        run: |
+          # The fcli-linux.tgz is located inside the downloaded artifacts path
+          tar -xzf ./artifacts/release-assets/fcli-linux.tgz -C .
+          chmod +x ./fcli
+
+      - name: Start Fortify SAST and DAST Scans
+        run: |
+          echo "Starting Fortify SAST scan..."
+          ./fcli fod sast start
+          echo "Starting Fortify DAST scan..."
+          ./fcli fod dast start
