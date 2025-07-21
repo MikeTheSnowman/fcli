@@ -387,8 +387,6 @@ jobs:
         run: |
           gh release delete ${{ matrix.semantic_version }} -y || true
           gh release create ${{ matrix.semantic_version }} -t "${{ matrix.semantic_version }}" -n "Semantic version release for [${{ needs.build.outputs.release_tag }}](https://github.com/fortify/fcli/releases/tag/${{ needs.build.outputs.release_tag }})" --verify-tag --latest=false
-          files=$(find "./artifacts/release-assets" -type f -printf "%p ")
-          gh release upload "${{ matrix.semantic_version }}" $files --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
@@ -462,3 +460,24 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  security_scan:
+    name: Fortify Security Scan
+    runs-on: ubuntu-latest
+    needs: build # Ensure build job completes before scanning
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      
+      - name: Run Fortify ScanCentral SCA
+        uses: fortify/github-action-fortify-scancentral@v2
+        with:
+          fortify-url: https://ams.fortify.com
+          fortify-tenant: FranklinBank24
+          scan-types: sca
+          fortify-pat: ${{ secrets.FOD_PAT }}
+          fortify-client-id: ${{ secrets.FOD_CLIENT_ID }}
+          fortify-client-secret: ${{ secrets.FOD_CLIENT_SECRET }}
+          build-tool: gradle
+          build-command: ./gradlew clean build
+          artifact-name: fortify-sca-results
+          upload-results: true
