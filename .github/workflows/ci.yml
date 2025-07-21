@@ -462,3 +462,19 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  security_scan:
+    name: Fortify Security Scan
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run Fortify ScanCentral SCA
+        uses: fortify/github-action-fortify-scancentral@v2
+        with:
+          fortify-url: https://ams.fortify.com
+          fortify-tenant: FranklinBank24
+          fortify-client-id: ${{ secrets.FOD_CLIENT_ID }}
+          fortify-client-secret: ${{ secrets.FOD_CLIENT_SECRET }}
+          scan-types: sca
