@@ -90,6 +90,16 @@ jobs:
           name: build-output
           path: build/dist/**/*
           
+      - name: Fortify SCA Scan
+        uses: fortify/github-action-fod-sca@v2
+        with:
+          fod-url: https://ams.fortify.com
+          fod-tenant: FranklinBank24
+          fod-pat: ${{ secrets.FOD_PAT }}
+          fod-client-id: ${{ secrets.FOD_CLIENT_ID }}
+          fod-client-secret: ${{ secrets.FOD_CLIENT_SECRET }}
+          debricked-api-token: ${{ secrets.DEBRICKED_API_TOKEN }}
+          
     outputs:
       do_release: ${{ env.DO_RELEASE }}
       do_prod_release: ${{ env.DO_PROD_RELEASE }}
