@@ -89,7 +89,15 @@ jobs:
         with:
           name: build-output
           path: build/dist/**/*
-          
+
+      - name: Fortify Security Scan
+        uses: fortify/github-action@v2
+        with:
+          fod_url: https://ams.fortify.com
+          fod_tenant: FranklinBank24
+          fod_pat: ${{ secrets.FOD_PAT }}
+          scan_types: '{"sca":true,"sast":false,"dast":false,"security_gateway":false}'
+
     outputs:
       do_release: ${{ env.DO_RELEASE }}
       do_prod_release: ${{ env.DO_PROD_RELEASE }}
@@ -461,4 +469,3 @@ jobs:
           git add .
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
-          
