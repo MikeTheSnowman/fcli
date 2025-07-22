@@ -462,3 +462,31 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  security_scan:
+    name: Fortify Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Check-out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run Fortify Scan
+        uses: fortify/github-action@v2
+        with:
+          fortify-url: https://ams.fortify.com
+          fortify-tenant: FranklinBank24
+          scan-types: sca
+          build-tool: gradle
+          build-command: build
+          project-name: ${{ github.repository }}
+          application-name: ${{ github.repository }}
+          release-name: ${{ needs.build.outputs.release_version }}
+          fod-pat: ${{ secrets.FOD_PAT }}
+          fod-client-id: ${{ secrets.FOD_CLIENT_ID }}
+          fod-client-secret: ${{ secrets.FOD_CLIENT_SECRET }}
