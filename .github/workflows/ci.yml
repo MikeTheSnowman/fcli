@@ -462,3 +462,22 @@ jobs:
           git commit -m "Update documentation for ${{ needs.build.outputs.release_tag }}"
           git push
           
+  fortify_scan:
+    name: Fortify Security Scan
+    needs: [docker, publishPages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out source code
+        uses: actions/checkout@v4
+      - name: Run Fortify on Demand SCA Scan
+        uses: fortify/github-action@v2
+        with:
+          sast-scan: false
+          debricked-sca-scan: true
+        env:
+          FOD_URL: https://ams.fortify.com
+          FOD_TENANT: FranklinBank24
+          FOD_PAT: ${{ secrets.FOD_PAT }}
+          FOD_CLIENT_ID: ${{ secrets.FOD_CLIENT_ID }}
+          FOD_CLIENT_SECRET: ${{ secrets.FOD_CLIENT_SECRET }}
+          DEBRICKED_API_TOKEN: ${{ secrets.DEBRICKED_API_TOKEN }}
